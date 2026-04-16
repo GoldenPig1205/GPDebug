@@ -102,9 +102,14 @@ namespace GPDebug
                 Player player = Player.Get(playerUserId);
 
                 var sb = new StringBuilder();
+                int limit = Config.ConsoleMessageLengthLimit;
 
                 sb.AppendLine($"[EVENT] {handler}.{type.Name}");
-                sb.AppendLine($"[ToString] {ev}");
+
+                string evString = ev?.ToString() ?? "null";
+                if (evString.Length > limit)
+                    evString = evString.Substring(0, limit) + "...";
+                sb.AppendLine($"[ToString] {evString}");
 
                 foreach (var prop in type.GetProperties())
                 {
@@ -118,13 +123,14 @@ namespace GPDebug
 
                     string valueStr = value?.ToString() ?? "null";
 
-                    if (valueStr.Length > 100)
-                        valueStr = valueStr.Substring(0, 100) + "...";
+                    if (valueStr.Length > limit)
+                        valueStr = valueStr.Substring(0, limit) + "...";
 
                     sb.AppendLine($"- {prop.Name} ({prop.PropertyType.Name}): {valueStr}");
                 }
 
-                player.SendConsoleMessage(sb.ToString(), "green");
+                string finalMessage = $"<size={Config.ConsoleMessageSize}>{sb}</size>";
+                player.SendConsoleMessage(finalMessage, "green");
             }
         }
     }
