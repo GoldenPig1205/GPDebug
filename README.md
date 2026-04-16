@@ -3,6 +3,8 @@
 A comprehensive debugging plugin for the **EXILED framework** in SCP: Secret Laboratory.
 It dynamically tracks all events occurring in-game using Reflection and outputs the property values of those events directly to the in-game client console.
 
+https://github.com/user-attachments/assets/9e3a9faa-1f22-44f8-881e-cc120dbbad31
+
 ### 🎯 Who is this for?
 
 **For Plugin Developers:**
@@ -40,8 +42,6 @@ Below are the available configuration options for `GPDebug`:
 gp_debug:
   is_enabled: true
   debug: false
-  # The amount of messages to show in the console. (Actually controls the font size)
-  console_message_size: 15
   # The maximum length of a message to show in the console.
   console_message_length_limit: 100
   # The color of the console messages.
