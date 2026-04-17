@@ -55,6 +55,7 @@ gp_debugger:
   - 'Player.MakingNoiseEventArgs'
   - 'Player.UsingMicrophoneEventArgs'
   - 'Item.UsingRadioPickupBatteryEventArgs'
+  - 'Item.UsingRadioBatteryEventArgs'
 ```
 
 ## 🛠 Requirements
