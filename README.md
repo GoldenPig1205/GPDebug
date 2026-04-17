@@ -27,6 +27,7 @@ You can use the following commands in the Remote Admin console:
 
 | Command | Description |
 |---|---|
+| `gpdebug help` or `gpdebug` | Help is displayed. |
 | `gpdebug start` | Activates debug mode and starts outputting all subscribed EXILED events to the console. |
 | `gpdebug stop` | Deactivates debug mode (stops receiving events). |
 | `gpdebug handler add <HandlerName>` | Adds a handler to monitor. (e.g., `gpdebug handler add Player`)<br>* If at least one handler is added, only events from those handlers will be filtered and output. (Case-insensitive) |
