@@ -19,7 +19,8 @@ namespace GPDebugger
         { 
             "Player.MakingNoiseEventArgs", 
             "Player.TriggeringTeslaEventArgs",
-            "Item.UsingRadioPickupBatteryEventArgs"
+            "Item.UsingRadioPickupBatteryEventArgs",
+            "Item.UsingRadioBatteryEventArgs"
         };
     }
 }
