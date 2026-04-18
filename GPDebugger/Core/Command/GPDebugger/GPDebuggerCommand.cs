@@ -375,13 +375,23 @@ namespace GPDebugger.Core.Command
                 if (prop.GetIndexParameters().Length > 0) continue;
                 try
                 {
-                    object val = prop.GetValue((prop.GetMethod?.IsStatic ?? false) ? null : instance);
+                    bool isStatic = prop.GetMethod?.IsStatic ?? false;
+                    string scopeLabel = isStatic
+                        ? "<color=#4FC3F7>[Static]</color>"
+                        : "<color=#81C784>[Instance]</color>";
+
+                    object val = prop.GetValue(isStatic ? null : instance);
                     string valStr = FormatValue(val);
-                    sb.AppendLine($"<b>{prop.Name}</b>: {valStr}");
+                    sb.AppendLine($"{scopeLabel} <b>{prop.Name}</b>: {valStr}");
                 }
                 catch (Exception ex)
                 {
-                    sb.AppendLine($"<b>{prop.Name}</b>: [Error] {ex.Message}");
+                    bool isStatic = prop.GetMethod?.IsStatic ?? false;
+                    string scopeLabel = isStatic
+                        ? "<color=#4FC3F7>[Static]</color>"
+                        : "<color=#81C784>[Instance]</color>";
+
+                    sb.AppendLine($"{scopeLabel} <b>{prop.Name}</b>: [Error] {ex.Message}");
                 }
             }
 

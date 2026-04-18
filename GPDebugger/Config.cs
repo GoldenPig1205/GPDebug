@@ -14,10 +14,13 @@ namespace GPDebugger
         [Description("The color of the console messages.")]
         public string ConsoleMessageColor { get; set; } = "white";
 
+        [Description("List of handlers to allow. If this list has at least one value, only these handlers will be logged. (ex. Player, Server)")]
+        public List<string> HandlerWhitelist { get; set; } = new();
+
         [Description("List of events to ignore from being printed. (ex. Player.MakingNoiseEventArgs)")]
-        public List<string> IgnoredEvents { get; set; } = new() 
-        { 
-            "Player.MakingNoiseEventArgs", 
+        public List<string> IgnoredEvents { get; set; } = new()
+        {
+            "Player.MakingNoiseEventArgs",
             "Player.TriggeringTeslaEventArgs",
             "Item.UsingRadioPickupBatteryEventArgs",
             "Item.UsingRadioBatteryEventArgs"

@@ -18,6 +18,13 @@ namespace GPDebugger
             Instance = this;
             base.OnEnabled();
 
+            DebugManager.EnabledHandlers.Clear();
+            foreach (var handler in Config.HandlerWhitelist)
+            {
+                if (!string.IsNullOrWhiteSpace(handler))
+                    DebugManager.EnabledHandlers.Add(handler.Trim());
+            }
+
             DebugManager.IgnoredEvents.Clear();
             foreach (var ignored in Config.IgnoredEvents)
             {
