@@ -28,6 +28,7 @@ namespace GPDebugger.Core.Feature
                     continue;
 
                 string handlerName = type.Name;
+                DebugManager.KnownHandlers.Add(handlerName);
 
                 foreach (var eventInfo in type.GetEvents(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
                 {
@@ -67,8 +68,8 @@ namespace GPDebugger.Core.Feature
                         if (eventObj == null)
                             continue;
 
-                        var subscribeMethod = propType.GetMethods().FirstOrDefault(m => 
-                            m.Name == "Subscribe" && 
+                        var subscribeMethod = propType.GetMethods().FirstOrDefault(m =>
+                            m.Name == "Subscribe" &&
                             m.GetParameters().Length == 1 &&
                             m.GetParameters()[0].ParameterType.Name.StartsWith("CustomEventHandler"));
 
@@ -103,7 +104,7 @@ namespace GPDebugger.Core.Feature
 
         public static void GenericHandler<T>(T ev)
         {
-            if (DebugManager.EnabledUsers.Count == 0)
+            if (DebugManager.EnabledHandlerUsers.Count == 0)
                 return;
 
             var type = typeof(T);
@@ -114,8 +115,8 @@ namespace GPDebugger.Core.Feature
             if (!DebugManager.IsHandlerEnabled(handler))
                 return;
 
-            string fullEventName = $"{handler}.{type.Name}";
-            if (DebugManager.IgnoredEvents.Contains(fullEventName))
+            string eventName = $"{handler}.{type.Name}";
+            if (DebugManager.IgnoredEvents.Contains(eventName))
                 return;
 
             string evString = ev?.ToString() ?? "null";
@@ -123,12 +124,15 @@ namespace GPDebugger.Core.Feature
             if (evString.Length > limit)
                 evString = evString.Substring(0, limit) + "...";
 
-            string header = $"[EVENT] <color=#55aaff>{handler}.{type.Name}</color>\n[ToString] {evString}";
+            string header = $"[EVENT] <color=#55aaff>{eventName}</color>\n[ToString] {evString}";
             string message = Command.GPDebuggerCommand.PrintProperties(type, ev, header);
 
-            foreach (var playerUserId in DebugManager.EnabledUsers.ToList())
+            foreach (var playerUserId in DebugManager.EnabledHandlerUsers.ToList())
             {
                 Player player = Player.Get(playerUserId);
+                if (player == null)
+                    continue;
+
                 player.SendConsoleMessage(message, Main.Instance.Config.ConsoleMessageColor);
             }
         }

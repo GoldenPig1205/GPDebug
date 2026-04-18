@@ -7,9 +7,9 @@ namespace GPDebugger.Core.Command
     {
         public string Command => "list";
         public string[] Aliases => Array.Empty<string>();
-        public string Description => "List available print classes.";
+        public string Description => "Compatibility alias for handler list.";
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
-            => GPDebuggerCommand.ExecuteList(out response);
+            => GPDebuggerCommand.ExecuteHandlerList(out response);
     }
 }

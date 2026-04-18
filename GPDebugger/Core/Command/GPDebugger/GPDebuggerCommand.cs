@@ -17,7 +17,7 @@ namespace GPDebugger.Core.Command
         public override string Command => "gpdebugger";
         public override string[] Aliases => new[] { "gpdebug" };
         public override string Description => "Debug tool";
-        public string[] Usage => new[] { "help/start/stop/handler/ignore/print/list" };
+        public string[] Usage => new[] { "help/handler/network/print" };
 
         private static System.Collections.Generic.List<System.Reflection.MethodInfo> _cachedGetMethods;
 
@@ -25,10 +25,8 @@ namespace GPDebugger.Core.Command
         {
             RegisterCommand(new HelpSubCommand());
             RegisterCommand(new ListSubCommand());
-            RegisterCommand(new StartSubCommand());
-            RegisterCommand(new StopSubCommand());
             RegisterCommand(new HandlerSubCommand());
-            RegisterCommand(new IgnoreSubCommand());
+            RegisterCommand(new NetworkSubCommand());
             RegisterCommand(new PrintSubCommand());
         }
 
@@ -44,133 +42,251 @@ namespace GPDebugger.Core.Command
             return true;
         }
 
-        private static string BuildHelpMessage()
+        internal static string BuildHelpMessage()
         {
             return
                 "GPDebugger Commands:\n" +
-                "- gpdebug help\n" +
+                "- <color=white>gpdebug help</color>\n" +
                 "  Shows this help message.\n" +
-                "- gpdebug list\n" +
-                "  Lists available Exiled feature classes for print target.\n" +
-                "- gpdebug start\n" +
-                "  Enables debugger for you and subscribes all events.\n" +
-                "- gpdebug stop\n" +
-                "  Disables debugger for you.\n" +
-                "- gpdebug handler <add/remove> <EventClass>\n" +
-                "  Controls enabled handler groups.\n" +
-                "  Examples: gpdebug handler add Player, gpdebug handler remove Server\n" +
-                "- gpdebug ignore <add/remove> <EventName>\n" +
-                "  Manages ignored event args types.\n" +
-                "  Example: gpdebug ignore add Player.MakingNoiseEventArgs\n" +
-                "- gpdebug print <class/player/hit> [playerName]\n" +
-                "  class: Prints public static properties of Exiled feature class (e.g. Server, Map).\n" +
+                "- <color=white>gpdebug handler start</color>\n" +
+                "  Enables event handler logging for you.\n" +
+                "- <color=white>gpdebug handler stop</color>\n" +
+                "  Disables event handler logging for you.\n" +
+                "- <color=white>gpdebug handler ignore add <HandlerName></color>\n" +
+                "  Ignores a handler from event logging.\n" +
+                "- <color=white>gpdebug handler ignore remove <HandlerName></color>\n" +
+                "  Removes a handler from the ignore list.\n" +
+                "- <color=white>gpdebug handler list</color>\n" +
+                "  Shows ignored handlers, active handlers, and available Exiled.API.Features classes.\n" +
+                "- <color=white>gpdebug network start</color>\n" +
+                "  Enables network method/message logging for you.\n" +
+                "- <color=white>gpdebug network stop</color>\n" +
+                "  Disables network method/message logging for you.\n" +
+                "- <color=white>gpdebug network ignore add <Name></color>\n" +
+                "  Ignores a network method or message by name.\n" +
+                "- <color=white>gpdebug network ignore remove <Name></color>\n" +
+                "  Removes a network method or message from the ignore list.\n" +
+                "- <color=white>gpdebug network list</color>\n" +
+                "  Shows ignored and active network methods/messages.\n" +
+                "- <color=white>gpdebug print <class/player/hit> [playerName]</color>\n" +
+                "  class: Prints public static properties of an Exiled.API.Features class (e.g. Server, Map).\n" +
                 "  player: Prints player properties (self or target player).\n" +
                 "  hit: Prints object info you are looking at.\n";
         }
 
         internal static bool ExecuteList(out string response)
         {
-            var classNames = typeof(Server).Assembly.GetTypes()
+            return ExecuteHandlerList(out response);
+        }
+
+        internal static bool ExecuteHandlerList(out string response)
+        {
+            var whitelist = DebugManager.HandlerWhitelist.OrderBy(x => x).ToArray();
+            var ignored = DebugManager.IgnoredHandlers.OrderBy(x => x).ToArray();
+            var active = DebugManager.KnownHandlers
+                .Where(x => (DebugManager.HandlerWhitelist.Count == 0 || DebugManager.HandlerWhitelist.Contains(x)) && !DebugManager.IgnoredHandlers.Contains(x))
+                .OrderBy(x => x)
+                .ToArray();
+            var classes = typeof(Server).Assembly.GetTypes()
                 .Where(t => t.IsClass && t.Namespace == "Exiled.API.Features" && t.IsAbstract && t.IsSealed && !t.Name.Contains("<"))
                 .Select(t => t.Name)
-                .OrderBy(n => n);
+                .OrderBy(n => n)
+                .ToArray();
 
-            response = "Available print classes:\n" + string.Join(", ", classNames);
+            response =
+                "Handler whitelist:\n- " + (whitelist.Length > 0 ? string.Join("\n- ", whitelist) : "None") +
+                "\n\nIgnored handlers:\n- " + (ignored.Length > 0 ? string.Join("\n- ", ignored) : "None") +
+                "\n\nActive handlers:\n- " + (active.Length > 0 ? string.Join("\n- ", active) : "None") +
+                "\n\nAvailable Exiled.API.Features classes:\n- " + string.Join("\n- ", classes);
             return true;
         }
 
-        internal static bool ExecuteStart(ICommandSender sender, out string response)
+        internal static bool ExecuteNetworkList(out string response)
+        {
+            var ignoredMethods = DebugManager.IgnoredNetworkMethods.OrderBy(x => x).ToArray();
+            var activeMethods = DebugManager.KnownNetworkMethods.Where(x => !DebugManager.IgnoredNetworkMethods.Contains(x)).OrderBy(x => x).ToArray();
+            var ignoredMessages = DebugManager.IgnoredNetworkMessages.OrderBy(x => x).ToArray();
+            var activeMessages = DebugManager.KnownNetworkMessages.Where(x => !DebugManager.IgnoredNetworkMessages.Contains(x)).OrderBy(x => x).ToArray();
+
+            response =
+                "Ignored network methods:\n- " + (ignoredMethods.Length > 0 ? string.Join("\n- ", ignoredMethods) : "None") +
+                "\n\nActive network methods:\n- " + (activeMethods.Length > 0 ? string.Join("\n- ", activeMethods) : "None") +
+                "\n\nIgnored network messages:\n- " + (ignoredMessages.Length > 0 ? string.Join("\n- ", ignoredMessages) : "None") +
+                "\n\nActive network messages:\n- " + (activeMessages.Length > 0 ? string.Join("\n- ", activeMessages) : "None");
+            return true;
+        }
+
+        internal static bool ExecuteHandlerStart(ICommandSender sender, out string response)
         {
             var player = Player.Get(sender);
-            DebugManager.EnabledUsers.Add(player.UserId);
+            DebugManager.EnabledHandlerUsers.Add(player.UserId);
             HandlerLog.RegisterAllEvents();
-            response = "Debug ON + All events subscribed";
+            response = "Handler debug ON";
             return true;
         }
 
-        internal static bool ExecuteStop(ICommandSender sender, out string response)
+        internal static bool ExecuteHandlerStop(ICommandSender sender, out string response)
         {
             var player = Player.Get(sender);
-            DebugManager.EnabledUsers.Remove(player.UserId);
-            response = "Debug OFF";
+            DebugManager.EnabledHandlerUsers.Remove(player.UserId);
+            response = "Handler debug OFF";
             return true;
         }
 
-        internal static bool ExecuteHandler(ArraySegment<string> arguments, out string response)
+        internal static bool ExecuteNetworkStart(ICommandSender sender, out string response)
         {
-            if (arguments.Count < 2)
+            var player = Player.Get(sender);
+            DebugManager.EnabledNetworkUsers.Add(player.UserId);
+            NetworkLog.RegisterAllEvents();
+            response = "Network debug ON";
+            return true;
+        }
+
+        internal static bool ExecuteNetworkStop(ICommandSender sender, out string response)
+        {
+            var player = Player.Get(sender);
+            DebugManager.EnabledNetworkUsers.Remove(player.UserId);
+            response = "Network debug OFF";
+            return true;
+        }
+
+        internal static bool ExecuteHandler(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (arguments.Count < 1)
             {
-                response = "Usage: GPDebugger handler <add/remove> <EventClass>\nExample: GPDebugger handler add Player\nExample: GPDebugger handler remove Server";
+                response = "Usage: GPDebugger handler <start/stop/list/ignore> [name]";
                 return false;
             }
 
             string action = arguments.At(0);
-            string handler = arguments.At(1);
 
-            if (action == "add")
+            if (action == "start")
+                return ExecuteHandlerStart(sender, out response);
+
+            if (action == "stop")
+                return ExecuteHandlerStop(sender, out response);
+
+            if (action == "list")
+                return ExecuteHandlerList(out response);
+
+            if (action == "ignore")
             {
-                if (DebugManager.EnabledHandlers.Add(handler))
+                if (arguments.Count < 3)
                 {
-                    response = $"Handler {handler} added";
-                    return true;
+                    response = "Usage: GPDebugger handler ignore <add/remove> <HandlerName>";
+                    return false;
                 }
 
-                response = $"Handler {handler} is already added.";
+                string ignoreAction = arguments.At(1);
+                string handlerName = arguments.At(2);
+
+                if (ignoreAction == "add")
+                {
+                    if (DebugManager.IgnoredHandlers.Add(handlerName))
+                    {
+                        response = $"Handler {handlerName} is now ignored.";
+                        return true;
+                    }
+
+                    response = $"Handler {handlerName} is already ignored.";
+                    return false;
+                }
+
+                if (ignoreAction == "remove")
+                {
+                    if (DebugManager.IgnoredHandlers.Remove(handlerName))
+                    {
+                        response = $"Handler {handlerName} removed from ignore list.";
+                        return true;
+                    }
+
+                    response = $"Handler {handlerName} is not in the ignore list.";
+                    return false;
+                }
+
+                response = "Invalid action. Use add/remove.";
                 return false;
             }
 
-            if (action == "remove")
-            {
-                if (DebugManager.EnabledHandlers.Remove(handler))
-                {
-                    response = $"Handler {handler} removed";
-                    return true;
-                }
+            response = "Invalid action. Use start/stop/list/ignore.";
+            return false;
+        }
 
-                response = $"Handler {handler} is not in the list.";
+        internal static bool ExecuteNetwork(ArraySegment<string> arguments, ICommandSender sender, out string response)
+        {
+            if (arguments.Count < 1)
+            {
+                response = "Usage: GPDebugger network <start/stop/list/ignore>";
                 return false;
             }
 
-            response = "Invalid action. Use add/remove.";
+            string action = arguments.At(0);
+
+            if (action == "start")
+                return ExecuteNetworkStart(sender, out response);
+
+            if (action == "stop")
+                return ExecuteNetworkStop(sender, out response);
+
+            if (action == "list")
+                return ExecuteNetworkList(out response);
+
+            if (action == "ignore")
+            {
+                if (arguments.Count < 3)
+                {
+                    response = "Usage: GPDebugger network ignore <add/remove> <Name>";
+                    return false;
+                }
+
+                string ignoreAction = arguments.At(1);
+                string name = arguments.At(2);
+                bool knownMethod = DebugManager.KnownNetworkMethods.Contains(name);
+                bool knownMessage = DebugManager.KnownNetworkMessages.Contains(name);
+
+                if (ignoreAction == "add")
+                {
+                    if (!knownMethod && !knownMessage)
+                    {
+                        DebugManager.IgnoredNetworkMethods.Add(name);
+                        DebugManager.IgnoredNetworkMessages.Add(name);
+                    }
+                    else
+                    {
+                        if (knownMethod) DebugManager.IgnoredNetworkMethods.Add(name);
+                        if (knownMessage) DebugManager.IgnoredNetworkMessages.Add(name);
+                    }
+
+                    response = $"Network item {name} is now ignored.";
+                    return true;
+                }
+
+                if (ignoreAction == "remove")
+                {
+                    var removedMethod = knownMethod ? DebugManager.IgnoredNetworkMethods.Remove(name) : DebugManager.IgnoredNetworkMethods.Remove(name);
+                    var removedMessage = knownMessage ? DebugManager.IgnoredNetworkMessages.Remove(name) : DebugManager.IgnoredNetworkMessages.Remove(name);
+
+                    if (removedMethod || removedMessage)
+                    {
+                        response = $"Network item {name} removed from ignore list.";
+                        return true;
+                    }
+
+                    response = $"Network item {name} is not in the ignore list.";
+                    return false;
+                }
+
+                response = "Invalid action. Use add/remove.";
+                return false;
+            }
+
+            response = "Invalid action. Use start/stop/list/ignore.";
             return false;
         }
 
         internal static bool ExecuteIgnore(ArraySegment<string> arguments, out string response)
         {
-            if (arguments.Count < 2)
-            {
-                response = "Usage: GPDebugger ignore <add/remove> <EventName>\nExample: GPDebugger ignore add Player.MakingNoiseEventArgs";
-                return false;
-            }
-
-            string action = arguments.At(0);
-            string eventName = arguments.At(1);
-
-            if (action == "add")
-            {
-                if (DebugManager.IgnoredEvents.Add(eventName))
-                {
-                    response = $"Event {eventName} is now ignored.";
-                    return true;
-                }
-
-                response = $"Event {eventName} is already ignored.";
-                return false;
-            }
-
-            if (action == "remove")
-            {
-                if (DebugManager.IgnoredEvents.Remove(eventName))
-                {
-                    response = $"Event {eventName} removed from ignore list.";
-                    return true;
-                }
-
-                response = $"Event {eventName} is not in the ignore list.";
-                return false;
-            }
-
-            response = "Invalid action. Use add/remove.";
+            response = "Use gpdebug handler ignore or gpdebug network ignore.";
             return false;
         }
 

@@ -116,10 +116,10 @@
     <Compile Include="Core\Command\GPDebugger\HelpSubCommand.cs" />
     <Compile Include="Core\Command\GPDebugger\IgnoreSubCommand.cs" />
     <Compile Include="Core\Command\GPDebugger\ListSubCommand.cs" />
+    <Compile Include="Core\Command\GPDebugger\NetworkSubCommand.cs" />
     <Compile Include="Core\Command\GPDebugger\PrintSubCommand.cs" />
-    <Compile Include="Core\Command\GPDebugger\StartSubCommand.cs" />
-    <Compile Include="Core\Command\GPDebugger\StopSubCommand.cs" />
     <Compile Include="Core\Feature\HandlerLog.cs" />
+    <Compile Include="Core\Feature\NetworkLog.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

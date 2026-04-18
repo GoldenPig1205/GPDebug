@@ -1,78 +1,91 @@
 # GPDebugger
 
-A comprehensive debugging plugin for the **EXILED framework** in SCP: Secret Laboratory.
-It dynamically tracks all events occurring in-game using Reflection and outputs the property values of those events directly to the in-game client console.
+A debugging plugin for the **EXILED framework** in SCP: Secret Laboratory.
+It captures event logs, handler activity, and network activity, then prints readable output to the in-game client console.
 
-### 🎯 Who is this for?
+## Features
 
-**For Plugin Developers:**
-Easily discover which in-game interactions trigger which events, making the plugin development process much more convenient.
+- **Event logging**: Automatically subscribes to `Exiled.Events.Handlers` events and prints their values.
+- **Handler filtering**: Restrict logging to selected handlers with `handler_whitelist`, or hide specific handlers at runtime.
+- **Event ignoring**: Ignore spammy event names from the console output.
+- **Network logging**: Track network methods and network messages in real time.
+- **Network ignoring**: Ignore specific network method or message names from the console output.
+- **Object inspection**: Use `gpdebug print hit` to inspect the object you are looking at.
+- **Feature inspection**: Use `gpdebug print <class>` or `gpdebug print player` to inspect Exiled feature classes or players.
 
-**For Server Owners:**
-Quickly check what kind of events are available to understand what new custom features or plugins can be developed for your server.
+## Commands
 
-## 🚀 Key Features
-
-- **Automatic Event Subscription**: Automatically finds and subscribes to all events under the `Exiled.Events.Handlers` namespace. Very useful for plugin development to check "when an event is called" and "what values it contains".
-- **Detailed Event Logs**: Reads all property values of the event object when an event occurs and outputs them to the console. Limits output to a configurable character limit for readability.
-- **Handler Filtering**: Allows filtering specific handler events such as `Player`, `Server`, `Scp3114`, `Warhead`, etc. (Supports case-insensitive filtering).
-- **Event Ignoring (Anti-Spam)**: Allows ignoring spammy events (e.g., `Player.MakingNoiseEventArgs`) from flooding the console, either via command or config.
-- **Customizable Output**: Configure text size, colors, and property character length limits to keep logs clean and readable.
-- **In-game Object Inspector**: Use `gpdebug print hit` to inspect objects you are looking at via Raycast. It automatically finds corresponding Exiled API objects (like `Door`, `Room`, `Pickup`) and prints their properties.
-- **Class/Player Properties Printing**: Use `gpdebug print <class>` or `gpdebug print player` to dump all properties of an Exiled static feature class or a specific player directly to your console.
-
-## 💻 Command Guide
-
-You can use the following commands in the Remote Admin console:
+Use these commands in the Remote Admin console.
 
 | Command | Description |
 |---|---|
-| `gpdebug help` or `gpdebug` | Help is displayed. |
-| `gpdebug start` | Activates debug mode and starts outputting all subscribed EXILED events to the console. |
-| `gpdebug stop` | Deactivates debug mode (stops receiving events). |
-| `gpdebug handler add <HandlerName>` | Adds a handler to monitor. (e.g., `gpdebug handler add Player`)<br>* If at least one handler is added, only events from those handlers will be filtered and output. (Case-insensitive) |
-| `gpdebug handler remove <HandlerName>` | Removes the specified handler from the filter list. |
-| `gpdebug ignore add <EventName>` | Adds a specific event to the ignore list so it won't be printed. (e.g., `gpdebug ignore add Player.MakingNoiseEventArgs`) |
-| `gpdebug ignore remove <EventName>` | Removes a specific event from the ignore list. |
-| `gpdebug print <class>` | Prints all public static properties of the specified Exiled UI class (e.g., `Server`, `Map`). |
-| `gpdebug print player [name/id]` | Prints all properties of the target player (or yourself if no arguments given). |
-| `gpdebug print hit` | Casts a ray where you are looking, gets the GameObject, and prints its properties along with any matched Exiled API features (like `BreakableDoor`). |
-| `gpdebug list` | Shows a list of all Exiled.API.Features classes that are available for the `gpdebug print <class>` command. |
+| `gpdebug` or `gpdebug help` | Show detailed help. |
+| `gpdebug handler start` | Enable event handler logging for you. |
+| `gpdebug handler stop` | Disable event handler logging for you. |
+| `gpdebug handler ignore add <HandlerName>` | Ignore a handler from event logging. |
+| `gpdebug handler ignore remove <HandlerName>` | Remove a handler from the ignore list. |
+| `gpdebug handler list` | Show handler whitelist, ignored handlers, active handlers, and available `Exiled.API.Features` classes. |
+| `gpdebug network start` | Enable network logging for you. |
+| `gpdebug network stop` | Disable network logging for you. |
+| `gpdebug network ignore add <Name>` | Ignore a network method or network message. |
+| `gpdebug network ignore remove <Name>` | Remove a network method or network message from the ignore list. |
+| `gpdebug network list` | Show ignored and active network methods/messages. |
+| `gpdebug print <class>` | Print public static properties of an Exiled feature class. |
+| `gpdebug print player [name/id]` | Print player properties for yourself or a target player. |
+| `gpdebug print hit` | Inspect the object you are looking at and matched Exiled API features. |
 
-## ⚙️ Configuration
-
-Below are the available configuration options for `GPDebugger`:
+## Configuration
 
 ```yml
 gp_debugger:
   is_enabled: true
   debug: false
-  # The maximum length of a message to show in the console.
   console_message_length_limit: 100
-  # The color of the console messages.
   console_message_color: 'white'
-  # List of handlers to allow. If this list has at least one value, only these handlers will be logged. (ex. Player, Server)
   handler_whitelist: []
-  # List of events to ignore from being printed. (ex. Player.MakingNoiseEventArgs)
+  ignored_handlers: []
   ignored_events:
   - 'Player.MakingNoiseEventArgs'
-  - 'Player.UsingMicrophoneEventArgs'
+  - 'Player.TriggeringTeslaEventArgs'
   - 'Item.UsingRadioPickupBatteryEventArgs'
   - 'Item.UsingRadioBatteryEventArgs'
+  ignored_network_methods:
+  - 'TargetReplyEncrypted'
+  - 'TargetSyncGameplayData'
+  - 'CmdSendEncryptedQuery'
+  ignored_network_messages:
+  - 'SpawnMessage'
+  - 'ObjectDestroyMessage'
+  - 'NetworkPingMessage'
+  - 'NetworkPongMessage'
+  - 'FpcFromClientMessage'
+  - 'SubroutineMessage'
+  - 'StatMessage'
+  - 'VoiceMessage'
+  - 'TransmitterPositionMessage'
+  - 'ElevatorSyncMsg'
+  - 'FpcOverrideMessage'
+  - 'TimeSnapshotMessage'
+  - 'EntityStateMessage'
+  - 'FpcPositionMessage'
+  - 'EncryptedMessageOutside'
 ```
 
-You can check handler list [here](https://github.com/Exiled-Team/EXILED/tree/master/Exiled.Events/Handlers).
+## Notes
 
-## 🛠 Requirements
+- `handler_whitelist` is an allow-list. If it contains items, only those handlers are shown.
+- `ignored_handlers` hides specific handlers from handler logging.
+- `ignored_events` suppresses specific event names.
+- `network` logging is controlled at runtime with `gpdebug network start/stop`.
+- `ignored_network_methods` and `ignored_network_messages` hide specific network items.
+
+## Requirements
 
 - [EXILED Framework](https://github.com/Exiled-Team/EXILED)
 
-## 👨‍💻 Author
+## Author
+
 - **GoldenPig1205**
-
-
-
-https://github.com/user-attachments/assets/7fc2baca-8dc2-4f48-b367-fd879703e2e1
 
 
 

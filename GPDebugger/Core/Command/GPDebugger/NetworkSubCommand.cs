@@ -3,14 +3,14 @@ using System;
 
 namespace GPDebugger.Core.Command
 {
-    internal sealed class HandlerSubCommand : ICommand, IUsageProvider
+    internal sealed class NetworkSubCommand : ICommand, IUsageProvider
     {
-        public string Command => "handler";
+        public string Command => "network";
         public string[] Aliases => Array.Empty<string>();
-        public string Description => "Manage handler logging, ignore list, and handler list.";
+        public string Description => "Manage network logging, ignore list, and network list.";
         public string[] Usage => new[] { "<start/stop/list/ignore> [name]" };
 
         public bool Execute(ArraySegment<string> arguments, ICommandSender sender, out string response)
-            => GPDebuggerCommand.ExecuteHandler(arguments, sender, out response);
+            => GPDebuggerCommand.ExecuteNetwork(arguments, sender, out response);
     }
 }

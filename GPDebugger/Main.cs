@@ -1,5 +1,6 @@
 ﻿using Exiled.API.Features;
 using GPDebugger.Core.Class;
+using GPDebugger.Core.Feature;
 using System;
 
 namespace GPDebugger
@@ -18,18 +19,49 @@ namespace GPDebugger
             Instance = this;
             base.OnEnabled();
 
-            DebugManager.EnabledHandlers.Clear();
+            DebugManager.EnabledHandlerUsers.Clear();
+            DebugManager.EnabledNetworkUsers.Clear();
+            DebugManager.KnownHandlers.Clear();
+            DebugManager.KnownNetworkMethods.Clear();
+            DebugManager.KnownNetworkMessages.Clear();
+            DebugManager.HandlerWhitelist.Clear();
+            DebugManager.IgnoredHandlers.Clear();
+            DebugManager.IgnoredEvents.Clear();
+            DebugManager.IgnoredNetworkMethods.Clear();
+            DebugManager.IgnoredNetworkMessages.Clear();
+
             foreach (var handler in Config.HandlerWhitelist)
             {
                 if (!string.IsNullOrWhiteSpace(handler))
-                    DebugManager.EnabledHandlers.Add(handler.Trim());
+                    DebugManager.HandlerWhitelist.Add(handler.Trim());
             }
 
-            DebugManager.IgnoredEvents.Clear();
-            foreach (var ignored in Config.IgnoredEvents)
+            foreach (var handler in Config.IgnoredHandlers)
             {
-                DebugManager.IgnoredEvents.Add(ignored);
+                if (!string.IsNullOrWhiteSpace(handler))
+                    DebugManager.IgnoredHandlers.Add(handler.Trim());
             }
+
+            foreach (var ignoredEvent in Config.IgnoredEvents)
+            {
+                if (!string.IsNullOrWhiteSpace(ignoredEvent))
+                    DebugManager.IgnoredEvents.Add(ignoredEvent.Trim());
+            }
+
+            foreach (var method in Config.IgnoredNetworkMethods)
+            {
+                if (!string.IsNullOrWhiteSpace(method))
+                    DebugManager.IgnoredNetworkMethods.Add(method.Trim());
+            }
+
+            foreach (var message in Config.IgnoredNetworkMessages)
+            {
+                if (!string.IsNullOrWhiteSpace(message))
+                    DebugManager.IgnoredNetworkMessages.Add(message.Trim());
+            }
+
+            HandlerLog.RegisterAllEvents();
+            NetworkLog.RegisterAllEvents();
 
             Exiled.Events.Handlers.Server.WaitingForPlayers += OnWaitingForPlayers;
         }
@@ -44,7 +76,8 @@ namespace GPDebugger
 
         public void OnWaitingForPlayers()
         {
-            DebugManager.EnabledUsers.Clear();
+            DebugManager.EnabledHandlerUsers.Clear();
+            DebugManager.EnabledNetworkUsers.Clear();
         }
     }
 }
