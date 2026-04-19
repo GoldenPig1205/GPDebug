@@ -28,11 +28,19 @@ namespace GPDebugger.Features
                 var inMessageEvent = diagnosticsType.GetEvent("InMessageEvent", BindingFlags.Public | BindingFlags.Static);
                 var outMessageEvent = diagnosticsType.GetEvent("OutMessageEvent", BindingFlags.Public | BindingFlags.Static);
 
-                if (inMessageEvent != null)
-                    inMessageEvent.AddEventHandler(null, new Action<NetworkDiagnostics.MessageInfo>(OnInMessage));
+                try
+                {
+                    if (inMessageEvent != null)
+                        inMessageEvent.AddEventHandler(null, new Action<NetworkDiagnostics.MessageInfo>(OnInMessage));
+                }
+                catch { }
 
-                if (outMessageEvent != null)
-                    outMessageEvent.AddEventHandler(null, new Action<NetworkDiagnostics.MessageInfo>(OnOutMessage));
+                try
+                {
+                    if (outMessageEvent != null)
+                        outMessageEvent.AddEventHandler(null, new Action<NetworkDiagnostics.MessageInfo>(OnOutMessage));
+                }
+                catch { }
             }
 
             _harmony = new Harmony("GPDebugger.NetworkLog");
@@ -167,34 +175,34 @@ namespace GPDebugger.Features
 
         private static void PostfixSendCommandInternal(NetworkBehaviour __instance, object[] __args)
         {
-            var functionFullName = __args.Length > 0 ? __args[0]?.ToString() : string.Empty;
-            var functionHashCode = __args.Length > 1 ? Convert.ToInt32(__args[1]) : 0;
-            var channelId = __args.Length > 3 ? Convert.ToInt32(__args[3]) : 0;
-            var requiresAuthority = __args.Length > 4 && __args[4] is bool b1 && b1;
+            var functionFullName = GetStringArg(__args, 0);
+            var functionHashCode = GetIntArg(__args, 1);
+            var channelId = GetIntArg(__args, 3);
+            var requiresAuthority = GetBoolArg(__args, 4);
             LogNetworkMethod("CMD", __instance, functionFullName, functionHashCode, channelId, requiresAuthority);
         }
 
         private static void PostfixSendRPCInternal(NetworkBehaviour __instance, object[] __args)
         {
-            var functionFullName = __args.Length > 0 ? __args[0]?.ToString() : string.Empty;
-            var functionHashCode = __args.Length > 1 ? Convert.ToInt32(__args[1]) : 0;
-            var channelId = __args.Length > 3 ? Convert.ToInt32(__args[3]) : 0;
-            var includeOwner = __args.Length > 4 && __args[4] is bool b1 && b1;
+            var functionFullName = GetStringArg(__args, 0);
+            var functionHashCode = GetIntArg(__args, 1);
+            var channelId = GetIntArg(__args, 3);
+            var includeOwner = GetBoolArg(__args, 4);
             LogNetworkMethod("RPC", __instance, functionFullName, functionHashCode, channelId, includeOwner);
         }
 
         private static void PostfixSendTargetRPCInternal(NetworkBehaviour __instance, object[] __args)
         {
-            var target = __args.Length > 0 ? __args[0] as NetworkConnection : null;
-            var functionFullName = __args.Length > 1 ? __args[1]?.ToString() : string.Empty;
-            var functionHashCode = __args.Length > 2 ? Convert.ToInt32(__args[2]) : 0;
-            var channelId = __args.Length > 4 ? Convert.ToInt32(__args[4]) : 0;
+            var target = GetArg<NetworkConnection>(__args, 0);
+            var functionFullName = GetStringArg(__args, 1);
+            var functionHashCode = GetIntArg(__args, 2);
+            var channelId = GetIntArg(__args, 4);
             LogNetworkMethod("TARGET", __instance, functionFullName, functionHashCode, channelId, false, target);
         }
 
         private static void LogNetworkMethod(string kind, NetworkBehaviour instance, string functionFullName, int functionHash, int channelId, bool requiresAuthority, NetworkConnection target = null)
         {
-            if (!ShouldLog())
+            if (!ShouldLog() || instance == null)
                 return;
 
             if (!string.IsNullOrWhiteSpace(functionFullName))
@@ -205,6 +213,45 @@ namespace GPDebugger.Features
 
             string targetInfo = target == null ? string.Empty : $", target={target.connectionId}";
             LogToViewers($"[NETWORK][{kind}] <color=#55aaff>{instance.GetType().Name}</color>.{functionFullName} hash={functionHash} channel={channelId} auth={requiresAuthority}{targetInfo}");
+        }
+
+        private static string GetStringArg(object[] args, int index)
+        {
+            if (args == null || index < 0 || index >= args.Length)
+                return string.Empty;
+
+            return args[index]?.ToString() ?? string.Empty;
+        }
+
+        private static int GetIntArg(object[] args, int index)
+        {
+            if (args == null || index < 0 || index >= args.Length)
+                return 0;
+
+            if (args[index] == null)
+                return 0;
+
+            try { return Convert.ToInt32(args[index]); }
+            catch { return 0; }
+        }
+
+        private static bool GetBoolArg(object[] args, int index)
+        {
+            if (args == null || index < 0 || index >= args.Length)
+                return false;
+
+            if (args[index] is bool b)
+                return b;
+
+            return false;
+        }
+
+        private static T GetArg<T>(object[] args, int index) where T : class
+        {
+            if (args == null || index < 0 || index >= args.Length)
+                return null;
+
+            return args[index] as T;
         }
 
         private static bool ShouldLog() => DebugManager.EnabledNetworkUsers.Count > 0;
