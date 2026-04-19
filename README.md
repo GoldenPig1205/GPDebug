@@ -3,6 +3,12 @@
 A debugging plugin for the **EXILED framework** in SCP: Secret Laboratory.
 It captures event logs, handler activity, and network activity, then prints readable output to the in-game client console.
 
+
+
+https://github.com/user-attachments/assets/d0eafc0c-2b5f-4a38-ad05-4150d8e74eec
+
+
+
 ## Features
 
 - **Event logging**: Automatically subscribes to `Exiled.Events.Handlers` events and prints their values.
