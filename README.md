@@ -11,6 +11,7 @@ It captures event logs, handler activity, and network activity, then prints read
 - **Network logging**: Track network methods and network messages in real time.
 - **Network ignoring**: Ignore specific network method or message names from the console output.
 - **Object inspection**: Use `gpdebug print hit` to inspect the object you are looking at.
+- **Component inspection**: Use `gpdebug print player/hit ComponentName` to inspect a specific component on a player or game object.
 - **Feature inspection**: Use `gpdebug print <class>` or `gpdebug print player` to inspect Exiled feature classes or players.
 
 ## Commands
@@ -31,8 +32,22 @@ Use these commands in the Remote Admin console.
 | `gpdebug network ignore remove <Name>` | Remove a network method or network message from the ignore list. |
 | `gpdebug network list` | Show ignored and active network methods/messages. |
 | `gpdebug print <class>` | Print public static properties of an Exiled feature class. |
-| `gpdebug print player [name/id]` | Print player properties for yourself or a target player. |
+| `gpdebug print player [playerName]` | Print player properties for yourself or a target player. |
+| `gpdebug print player [playerName] <ComponentName>` | Print component properties of a player. |
 | `gpdebug print hit` | Inspect the object you are looking at and matched Exiled API features. |
+| `gpdebug print hit <ComponentName>` | Inspect a specific component on the object you are looking at. |
+
+### Print Command Examples
+
+```
+gpdebug print player                           # Print your own player properties
+gpdebug print player 8                         # Print player ID 8's properties
+gpdebug print player CharacterController       # Inspect your CharacterController component
+gpdebug print player 8 Rigidbody               # Inspect player ID 8's Rigidbody component
+gpdebug print hit                              # Inspect the object you are looking at
+gpdebug print hit Transform                    # Inspect the Transform component of the object you're looking at
+gpdebug print Server                           # Print Server class properties
+```
 
 ## Configuration
 
@@ -78,6 +93,7 @@ gp_debugger:
 - `ignored_events` suppresses specific event names.
 - `network` logging is controlled at runtime with `gpdebug network start/stop`.
 - `ignored_network_methods` and `ignored_network_messages` hide specific network items.
+- Component names are case-sensitive (e.g., `CharacterController`, `Rigidbody`, `Transform`).
 
 ## Requirements
 

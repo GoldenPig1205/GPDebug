@@ -39,7 +39,7 @@ namespace GPDebugger.Core.Command
         internal static bool ExecuteHelp(out string response)
         {
             response = BuildHelpMessage();
-            return true;
+            return false;
         }
 
         internal static string BuildHelpMessage()
@@ -68,10 +68,11 @@ namespace GPDebugger.Core.Command
                 "  Removes a network method or message from the ignore list.\n" +
                 "- <color=white>gpdebug network list</color>\n" +
                 "  Shows ignored and active network methods/messages.\n" +
-                "- <color=white>gpdebug print <class/player/hit> [playerName]</color>\n" +
+                "- <color=white>gpdebug print <class/player/hit> [playerName] [componentName]</color>\n" +
                 "  class: Prints public static properties of an Exiled.API.Features class (e.g. Server, Map).\n" +
-                "  player: Prints player properties (self or target player).\n" +
-                "  hit: Prints object info you are looking at.\n";
+                "  player: Prints player properties (self or target player). Optionally specify [componentName] to inspect a component.\n" +
+                "  hit: Prints object info you are looking at. Optionally specify [componentName] to inspect a component.\n" +
+                "  Examples: gpdebug print player, gpdebug print player 8 CharacterController, gpdebug print hit Rigidbody\n";
         }
 
         internal static bool ExecuteList(out string response)
@@ -296,7 +297,7 @@ namespace GPDebugger.Core.Command
 
             if (arguments.Count < 1)
             {
-                response = "Usage: GPDebugger print <class/player/hit> [player]\n- class: Print public static properties of an Exiled.API.Features class (e.g. Server, Map)\n- player: Print player properties (yourself or [player] if provided)\n- hit: Print properties of the object you are looking at (Raycast)";
+                response = "Usage: GPDebugger print <class/player/hit> [player] [component]\n- class: Print public static properties of an Exiled.API.Features class (e.g. Server, Map)\n- player: Print player properties (yourself or [player] if provided, optionally with [component])\n- hit: Print properties of the object you are looking at (Raycast), optionally with [component]";
                 return false;
             }
 
@@ -309,6 +310,23 @@ namespace GPDebugger.Core.Command
                 {
                     EnsureCacheInit();
                     var targetGo = hit.collider.gameObject;
+
+                    if (arguments.Count >= 2)
+                    {
+                        string componentName = arguments.At(1);
+                        var component = targetGo.GetComponent(componentName);
+                        if (component != null)
+                        {
+                            response = PrintProperties(component.GetType(), component, $"--- {component.GetType().Name} Info ---");
+                            player?.SendConsoleMessage(response, "white");
+                            ServerConsole.AddLog(StripRichText(response));
+                            return true;
+                        }
+
+                        response = $"Component '{componentName}' not found on {targetGo.name}.";
+                        return false;
+                    }
+
                     var foundObjects = new System.Collections.Generic.HashSet<object>();
                     var currentTransform = targetGo.transform;
 
@@ -350,6 +368,7 @@ namespace GPDebugger.Core.Command
                         {
                             sb.AppendLine(PrintProperties(obj.GetType(), obj, $"--- {obj.GetType().Name} Info ---"));
                         }
+                        sb.Append(PrintGameObjectComponents(targetGo));
 
                         response = sb.ToString();
                         player?.SendConsoleMessage(response, "white");
@@ -358,6 +377,7 @@ namespace GPDebugger.Core.Command
                     }
 
                     response = PrintProperties(typeof(UnityEngine.GameObject), targetGo, $"--- GameObject Info: <color=#55aaff>{targetGo.name}</color> ---");
+                    response += PrintGameObjectComponents(targetGo);
                     player?.SendConsoleMessage(response, "white");
                     ServerConsole.AddLog(StripRichText(response));
                     return true;
@@ -370,17 +390,54 @@ namespace GPDebugger.Core.Command
             if (targetTypeInfo == "player")
             {
                 Player targetPlayer = player;
+                string componentName = null;
+
                 if (arguments.Count >= 2)
                 {
-                    targetPlayer = Player.Get(arguments.At(1));
-                    if (targetPlayer == null)
+                    string secondArg = arguments.At(1);
+                    
+                    if (arguments.Count >= 3)
                     {
-                        response = $"Player not found: {arguments.At(1)}";
-                        return false;
+                        targetPlayer = Player.Get(secondArg);
+                        if (targetPlayer == null)
+                        {
+                            response = $"Player not found: {secondArg}";
+                            return false;
+                        }
+                        componentName = arguments.At(2);
+                    }
+                    else
+                    {
+                        var testPlayer = Player.Get(secondArg);
+                        if (testPlayer != null)
+                        {
+                            targetPlayer = testPlayer;
+                        }
+                        else
+                        {
+                            componentName = secondArg;
+                        }
                     }
                 }
 
+                if (componentName != null && targetPlayer.GameObject != null)
+                {
+                    var component = targetPlayer.GameObject.GetComponent(componentName);
+                    if (component != null)
+                    {
+                        response = PrintProperties(component.GetType(), component, $"--- {component.GetType().Name} Info ---");
+                        player?.SendConsoleMessage(response, "white");
+                        ServerConsole.AddLog(StripRichText(response));
+                        return true;
+                    }
+
+                    response = $"Component '{componentName}' not found on player {targetPlayer.Nickname}.";
+                    return false;
+                }
+
                 response = PrintProperties(typeof(Player), targetPlayer, $"--- Player Info: <color=#55aaff>{targetPlayer.Nickname}</color> ---");
+                if (targetPlayer.GameObject != null)
+                    response += PrintGameObjectComponents(targetPlayer.GameObject);
                 player?.SendConsoleMessage(response, "white");
                 ServerConsole.AddLog(StripRichText(response));
                 return true;
@@ -399,6 +456,24 @@ namespace GPDebugger.Core.Command
 
             response = $"Target '{targetTypeInfo}' not found in Exiled.API.Features or is not a public static class.";
             return false;
+        }
+
+        private static string PrintGameObjectComponents(UnityEngine.GameObject gameObject)
+        {
+            if (gameObject == null)
+                return string.Empty;
+
+            var components = gameObject.GetComponents<UnityEngine.Component>();
+            if (components.Length == 0)
+                return "\n<size=15>Components: <color=gray>None</color></size>";
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("\n<size=15>Components:</size>");
+            foreach (var component in components)
+            {
+                sb.AppendLine($"<size=15>- {component.GetType().Name}</size>");
+            }
+            return sb.ToString();
         }
 
         private static void EnsureCacheInit()
